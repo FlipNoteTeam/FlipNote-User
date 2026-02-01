@@ -1,20 +1,23 @@
-# Build stage
-FROM gradle:8.11-jdk21 AS build
+FROM gradle:8-jdk21 AS build
 WORKDIR /app
+
 COPY build.gradle.kts settings.gradle.kts ./
-COPY gradle ./gradle
 COPY src ./src
+
 RUN gradle bootJar --no-daemon
 
-# Runtime stage
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:21-jre
 WORKDIR /app
 
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
-USER appuser
+ENV TZ=Asia/Seoul
+RUN apt-get update \
+    && apt-get install -y tzdata \
+    && ln -sf /usr/share/zoneinfo/$TZ /etc/localtime \
+    && echo $TZ > /etc/timezone \
+    && rm -rf /var/lib/apt/lists/*
 
-COPY --from=build /app/build/libs/*.jar app.jar
+COPY --from=build /app/build/libs/user-0.0.1-SNAPSHOT.jar .
 
-EXPOSE 8081
+EXPOSE 8080
 
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-jar", "user-0.0.1-SNAPSHOT.jar"]
