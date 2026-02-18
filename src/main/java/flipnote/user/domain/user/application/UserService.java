@@ -1,6 +1,8 @@
 package flipnote.user.domain.user.application;
 
 import flipnote.user.domain.user.domain.*;
+import flipnote.user.domain.user.infrastructure.JwtProvider;
+import flipnote.user.domain.user.infrastructure.SessionInvalidationRepository;
 import flipnote.user.domain.user.presentation.dto.request.UpdateProfileRequest;
 import flipnote.user.domain.user.presentation.dto.response.MyInfoResponse;
 import flipnote.user.domain.user.presentation.dto.response.UserInfoResponse;
@@ -15,6 +17,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final SessionInvalidationRepository sessionInvalidationRepository;
+    private final JwtProvider jwtProvider;
 
     public MyInfoResponse getMyInfo(Long userId) {
         User user = findActiveUser(userId);
@@ -39,6 +43,7 @@ public class UserService {
     public void withdraw(Long userId) {
         User user = findActiveUser(userId);
         user.withdraw();
+        sessionInvalidationRepository.invalidate(userId, jwtProvider.getRefreshTokenExpiration());
     }
 
     private User findActiveUser(Long userId) {

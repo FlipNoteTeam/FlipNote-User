@@ -98,8 +98,11 @@ public class AuthController {
 
     @PostMapping("/password-reset")
     public ResponseEntity<Void> resetPassword(
-            @Valid @RequestBody PasswordResetRequest request) {
+            @Valid @RequestBody PasswordResetRequest request,
+            HttpServletResponse response) {
         authService.resetPassword(request.getToken(), request.getPassword());
+        CookieUtil.deleteCookie(response, HttpConstants.ACCESS_TOKEN_COOKIE);
+        CookieUtil.deleteCookie(response, HttpConstants.REFRESH_TOKEN_COOKIE);
         return ResponseEntity.noContent().build();
     }
 

@@ -15,8 +15,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.ZoneId;
-import java.util.Date;
 import java.util.List;
 
 @Service
@@ -31,6 +29,7 @@ public class AuthService {
     private final EmailVerificationRepository emailVerificationRepository;
     private final PasswordResetRepository passwordResetRepository;
     private final OAuthLinkRepository oAuthLinkRepository;
+    private final SessionInvalidationRepository sessionInvalidationRepository;
     private final VerificationCodeGenerator verificationCodeGenerator;
     private final PasswordResetTokenGenerator passwordResetTokenGenerator;
     private final ClientProperties clientProperties;
@@ -89,15 +88,14 @@ public class AuthService {
         }
 
         TokenClaims claims = jwtProvider.extractClaims(refreshToken);
-        User user = findActiveUser(claims.userId());
 
-        if (user.getInvalidatedAt() != null) {
-            Date issuedAt = jwtProvider.getIssuedAt(refreshToken);
-            if (issuedAt.before(Date.from(user.getInvalidatedAt()
-                    .atZone(ZoneId.systemDefault()).toInstant()))) {
+        sessionInvalidationRepository.getInvalidatedAtMillis(claims.userId()).ifPresent(invalidatedAtMillis -> {
+            if (jwtProvider.getIssuedAt(refreshToken).getTime() < invalidatedAtMillis) {
                 throw new UserException(UserErrorCode.INVALIDATED_SESSION);
             }
-        }
+        });
+
+        User user = findActiveUser(claims.userId());
 
         long remaining = jwtProvider.getRemainingExpiration(refreshToken);
         if (remaining > 0) {
@@ -116,6 +114,7 @@ public class AuthService {
         }
 
         user.changePassword(passwordEncoder.encode(request.getNewPassword()));
+        sessionInvalidationRepository.invalidate(user.getId(), jwtProvider.getRefreshTokenExpiration());
     }
 
     public TokenValidateResponse validateToken(String token) {
@@ -128,15 +127,14 @@ public class AuthService {
         }
 
         TokenClaims claims = jwtProvider.extractClaims(token);
-        User user = findActiveUser(claims.userId());
 
-        if (user.getInvalidatedAt() != null) {
-            Date issuedAt = jwtProvider.getIssuedAt(token);
-            if (issuedAt.before(Date.from(user.getInvalidatedAt()
-                    .atZone(ZoneId.systemDefault()).toInstant()))) {
+        sessionInvalidationRepository.getInvalidatedAtMillis(claims.userId()).ifPresent(invalidatedAtMillis -> {
+            if (jwtProvider.getIssuedAt(token).getTime() < invalidatedAtMillis) {
                 throw new UserException(UserErrorCode.INVALIDATED_SESSION);
             }
-        }
+        });
+
+        findActiveUser(claims.userId());
 
         return new TokenValidateResponse(claims.userId(), claims.email(), claims.role());
     }
@@ -194,6 +192,7 @@ public class AuthService {
                 .orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
 
         user.changePassword(passwordEncoder.encode(newPassword));
+        sessionInvalidationRepository.invalidate(user.getId(), jwtProvider.getRefreshTokenExpiration());
         passwordResetRepository.delete(token, email);
     }
 

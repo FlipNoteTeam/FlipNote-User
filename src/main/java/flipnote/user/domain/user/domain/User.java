@@ -46,8 +46,6 @@ public class User extends BaseEntity {
     @Column(nullable = false, length = 20)
     private Status status;
 
-    private LocalDateTime invalidatedAt;
-
     private LocalDateTime deletedAt;
 
     @Builder
@@ -64,7 +62,6 @@ public class User extends BaseEntity {
 
     public void changePassword(String encodedPassword) {
         this.password = encodedPassword;
-        this.invalidatedAt = LocalDateTime.now();
     }
 
     public void updateProfile(String nickname, String phone, boolean smsAgree, String profileImageUrl) {
@@ -78,7 +75,6 @@ public class User extends BaseEntity {
 
     public void withdraw() {
         this.status = Status.WITHDRAWN;
-        this.invalidatedAt = LocalDateTime.now();
         this.deletedAt = LocalDateTime.now();
     }
 
