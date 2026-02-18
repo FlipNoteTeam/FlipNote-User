@@ -16,6 +16,13 @@ public class ApiResponse<T> {
     private final String message;
     private final T data;
 
+    public static <T> ApiResponse<T> success(T data) {
+        return ApiResponse.<T>builder()
+                .status(200)
+                .data(data)
+                .build();
+    }
+
     public static ApiResponse<Void> error(ErrorCode errorCode) {
         return ApiResponse.<Void>builder()
                 .status(errorCode.getStatus())
