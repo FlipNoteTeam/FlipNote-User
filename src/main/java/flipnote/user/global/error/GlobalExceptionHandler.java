@@ -1,6 +1,6 @@
 package flipnote.user.global.error;
 
-import flipnote.user.domain.user.domain.UserException;
+import flipnote.user.global.exception.UserException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
