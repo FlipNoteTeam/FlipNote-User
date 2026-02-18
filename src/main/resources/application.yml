@@ -32,11 +32,11 @@ server:
 
 springdoc:
   swagger-ui:
-    path: /swagger-ui.html
+    path: /users/swagger-ui.html
     tags-sorter: alpha
     operations-sorter: alpha
   api-docs:
-    path: /v3/api-docs
+    path: /users/v3/api-docs
 
 management:
   endpoints:
