@@ -7,9 +7,6 @@ import flipnote.user.global.exception.EmailSendException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Recover;
-import org.springframework.retry.annotation.Retryable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
@@ -18,21 +15,32 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class PasswordResetEventListener {
 
+    private static final int MAX_ATTEMPTS = 3;
+    private static final long INITIAL_DELAY_MS = 2000L;
+
     private final MailService mailService;
 
     @Async
-    @Retryable(
-            maxAttempts = 3,
-            retryFor = {EmailSendException.class},
-            backoff = @Backoff(delay = 2000, multiplier = 2)
-    )
     @EventListener
     public void handle(PasswordResetCreateEvent event) {
-        mailService.sendPasswordResetLink(event.to(), event.link(), PasswordResetConstants.TOKEN_TTL_MINUTES);
-    }
-
-    @Recover
-    public void recover(EmailSendException ex, PasswordResetCreateEvent event) {
-        log.error("비밀번호 재설정 링크 전송 실패: to={}", event.to(), ex);
+        long delay = INITIAL_DELAY_MS;
+        for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+            try {
+                mailService.sendPasswordResetLink(event.to(), event.link(), PasswordResetConstants.TOKEN_TTL_MINUTES);
+                return;
+            } catch (EmailSendException e) {
+                if (attempt == MAX_ATTEMPTS) {
+                    log.error("비밀번호 재설정 링크 전송 실패: to={}", event.to(), e);
+                    return;
+                }
+                try {
+                    Thread.sleep(delay);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    return;
+                }
+                delay *= 2;
+            }
+        }
     }
 }

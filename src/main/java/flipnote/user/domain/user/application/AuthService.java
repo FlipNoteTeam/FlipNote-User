@@ -166,13 +166,13 @@ public class AuthService {
     }
 
     public void requestPasswordReset(String email) {
-        if (passwordResetRepository.hasToken(email)) {
-            throw new UserException(UserErrorCode.ALREADY_SENT_PASSWORD_RESET_LINK);
-        }
-
         // 사용자가 없어도 정상 반환 (이메일 존재 여부 노출 방지)
         if (!userRepository.existsByEmail(email)) {
             return;
+        }
+
+        if (passwordResetRepository.hasToken(email)) {
+            throw new UserException(UserErrorCode.ALREADY_SENT_PASSWORD_RESET_LINK);
         }
 
         String token = passwordResetTokenGenerator.generate();
