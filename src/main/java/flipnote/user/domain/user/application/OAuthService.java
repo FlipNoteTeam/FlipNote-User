@@ -64,7 +64,7 @@ public class OAuthService {
 
         OAuthLink oAuthLink = oAuthLinkRepository
                 .findByProviderAndProviderIdWithUser(userInfo.getProvider(), userInfo.getProviderId())
-                .orElseThrow(() -> new UserException(UserErrorCode.NOT_REGISTERED_SOCIAL_ACCOUNT));
+                .orElseThrow(() -> new UserException(AuthErrorCode.NOT_REGISTERED_SOCIAL_ACCOUNT));
 
         return jwtProvider.generateTokenPair(oAuthLink.getUser());
     }
@@ -73,7 +73,7 @@ public class OAuthService {
     public void linkSocialAccount(String providerName, String code, String state,
                                   String codeVerifier, HttpServletRequest request) {
         Long userId = socialLinkTokenRepository.findUserIdByState(state)
-                .orElseThrow(() -> new UserException(UserErrorCode.INVALID_SOCIAL_LINK_TOKEN));
+                .orElseThrow(() -> new UserException(AuthErrorCode.INVALID_SOCIAL_LINK_TOKEN));
 
         socialLinkTokenRepository.delete(state);
 
@@ -81,7 +81,7 @@ public class OAuthService {
 
         if (oAuthLinkRepository.existsByUser_IdAndProviderAndProviderId(
                 userId, userInfo.getProvider(), userInfo.getProviderId())) {
-            throw new UserException(UserErrorCode.ALREADY_LINKED_SOCIAL_ACCOUNT);
+            throw new UserException(AuthErrorCode.ALREADY_LINKED_SOCIAL_ACCOUNT);
         }
 
         User user = userRepository.findByIdAndStatus(userId, User.Status.ACTIVE)
@@ -106,12 +106,12 @@ public class OAuthService {
     private OAuthProperties.Provider resolveProvider(String providerName) {
         Map<String, OAuthProperties.Provider> providers = oAuthProperties.getProviders();
         if (providers == null) {
-            throw new UserException(UserErrorCode.INVALID_OAUTH_PROVIDER);
+            throw new UserException(AuthErrorCode.INVALID_OAUTH_PROVIDER);
         }
         OAuthProperties.Provider provider = providers.get(providerName.toLowerCase());
         if (provider == null) {
             log.warn("지원하지 않는 OAuth Provider: {}", providerName);
-            throw new UserException(UserErrorCode.INVALID_OAUTH_PROVIDER);
+            throw new UserException(AuthErrorCode.INVALID_OAUTH_PROVIDER);
         }
         return provider;
     }

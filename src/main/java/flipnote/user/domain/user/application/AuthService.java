@@ -38,11 +38,11 @@ public class AuthService {
     @Transactional
     public UserResponse register(SignupRequest request) {
         if (!emailVerificationRepository.isVerified(request.getEmail())) {
-            throw new UserException(UserErrorCode.UNVERIFIED_EMAIL);
+            throw new UserException(AuthErrorCode.UNVERIFIED_EMAIL);
         }
 
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new UserException(UserErrorCode.EMAIL_ALREADY_EXISTS);
+            throw new UserException(AuthErrorCode.EMAIL_ALREADY_EXISTS);
         }
 
         User user = User.builder()
@@ -60,10 +60,10 @@ public class AuthService {
 
     public TokenPair login(LoginRequest request) {
         User user = userRepository.findByEmailAndStatus(request.getEmail(), User.Status.ACTIVE)
-                .orElseThrow(() -> new UserException(UserErrorCode.INVALID_CREDENTIALS));
+                .orElseThrow(() -> new UserException(AuthErrorCode.INVALID_CREDENTIALS));
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new UserException(UserErrorCode.INVALID_CREDENTIALS);
+            throw new UserException(AuthErrorCode.INVALID_CREDENTIALS);
         }
 
         return jwtProvider.generateTokenPair(user);
@@ -80,18 +80,18 @@ public class AuthService {
 
     public TokenPair refreshToken(String refreshToken) {
         if (refreshToken == null || !jwtProvider.isTokenValid(refreshToken)) {
-            throw new UserException(UserErrorCode.INVALID_TOKEN);
+            throw new UserException(AuthErrorCode.INVALID_TOKEN);
         }
 
         if (tokenBlacklistRepository.isBlacklisted(refreshToken)) {
-            throw new UserException(UserErrorCode.BLACKLISTED_TOKEN);
+            throw new UserException(AuthErrorCode.BLACKLISTED_TOKEN);
         }
 
         TokenClaims claims = jwtProvider.extractClaims(refreshToken);
 
         sessionInvalidationRepository.getInvalidatedAtMillis(claims.userId()).ifPresent(invalidatedAtMillis -> {
             if (jwtProvider.getIssuedAt(refreshToken).getTime() < invalidatedAtMillis) {
-                throw new UserException(UserErrorCode.INVALIDATED_SESSION);
+                throw new UserException(AuthErrorCode.INVALIDATED_SESSION);
             }
         });
 
@@ -110,7 +110,7 @@ public class AuthService {
         User user = findActiveUser(userId);
 
         if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
-            throw new UserException(UserErrorCode.PASSWORD_MISMATCH);
+            throw new UserException(AuthErrorCode.PASSWORD_MISMATCH);
         }
 
         user.changePassword(passwordEncoder.encode(request.getNewPassword()));
@@ -119,18 +119,18 @@ public class AuthService {
 
     public TokenValidateResponse validateToken(String token) {
         if (!jwtProvider.isTokenValid(token)) {
-            throw new UserException(UserErrorCode.INVALID_TOKEN);
+            throw new UserException(AuthErrorCode.INVALID_TOKEN);
         }
 
         if (tokenBlacklistRepository.isBlacklisted(token)) {
-            throw new UserException(UserErrorCode.BLACKLISTED_TOKEN);
+            throw new UserException(AuthErrorCode.BLACKLISTED_TOKEN);
         }
 
         TokenClaims claims = jwtProvider.extractClaims(token);
 
         sessionInvalidationRepository.getInvalidatedAtMillis(claims.userId()).ifPresent(invalidatedAtMillis -> {
             if (jwtProvider.getIssuedAt(token).getTime() < invalidatedAtMillis) {
-                throw new UserException(UserErrorCode.INVALIDATED_SESSION);
+                throw new UserException(AuthErrorCode.INVALIDATED_SESSION);
             }
         });
 
@@ -141,7 +141,7 @@ public class AuthService {
 
     public void sendEmailVerificationCode(String email) {
         if (emailVerificationRepository.hasCode(email)) {
-            throw new UserException(UserErrorCode.ALREADY_ISSUED_VERIFICATION_CODE);
+            throw new UserException(AuthErrorCode.ALREADY_ISSUED_VERIFICATION_CODE);
         }
 
         String code = verificationCodeGenerator.generate();
@@ -151,12 +151,12 @@ public class AuthService {
 
     public void verifyEmail(String email, String code) {
         if (!emailVerificationRepository.hasCode(email)) {
-            throw new UserException(UserErrorCode.NOT_ISSUED_VERIFICATION_CODE);
+            throw new UserException(AuthErrorCode.NOT_ISSUED_VERIFICATION_CODE);
         }
 
         String savedCode = emailVerificationRepository.getCode(email);
         if (!code.equals(savedCode)) {
-            throw new UserException(UserErrorCode.INVALID_VERIFICATION_CODE);
+            throw new UserException(AuthErrorCode.INVALID_VERIFICATION_CODE);
         }
 
         emailVerificationRepository.deleteCode(email);
@@ -170,7 +170,7 @@ public class AuthService {
         }
 
         if (passwordResetRepository.hasToken(email)) {
-            throw new UserException(UserErrorCode.ALREADY_SENT_PASSWORD_RESET_LINK);
+            throw new UserException(AuthErrorCode.ALREADY_SENT_PASSWORD_RESET_LINK);
         }
 
         String token = passwordResetTokenGenerator.generate();
@@ -185,7 +185,7 @@ public class AuthService {
     public void resetPassword(String token, String newPassword) {
         String email = passwordResetRepository.findEmailByToken(token);
         if (email == null) {
-            throw new UserException(UserErrorCode.INVALID_PASSWORD_RESET_TOKEN);
+            throw new UserException(AuthErrorCode.INVALID_PASSWORD_RESET_TOKEN);
         }
 
         User user = userRepository.findByEmailAndStatus(email, User.Status.ACTIVE)
@@ -204,7 +204,7 @@ public class AuthService {
     @Transactional
     public void deleteSocialLink(Long userId, Long socialLinkId) {
         if (!oAuthLinkRepository.existsByIdAndUser_Id(socialLinkId, userId)) {
-            throw new UserException(UserErrorCode.NOT_REGISTERED_SOCIAL_ACCOUNT);
+            throw new UserException(AuthErrorCode.NOT_REGISTERED_SOCIAL_ACCOUNT);
         }
         oAuthLinkRepository.deleteById(socialLinkId);
     }
