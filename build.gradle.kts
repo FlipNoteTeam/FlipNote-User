@@ -45,6 +45,9 @@ dependencies {
     implementation("io.grpc:grpc-services")
     implementation("org.springframework.grpc:spring-grpc-spring-boot-starter")
 
+    // Swagger
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.1")
+
     // Email
     implementation("com.resend:resend-java:3.1.0")
     implementation("org.springframework.boot:spring-boot-starter-thymeleaf")
