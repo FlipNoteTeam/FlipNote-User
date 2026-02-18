@@ -38,6 +38,10 @@ public class AuthService {
 
     @Transactional
     public UserResponse register(SignupRequest request) {
+        if (!emailVerificationRepository.isVerified(request.getEmail())) {
+            throw new UserException(UserErrorCode.UNVERIFIED_EMAIL);
+        }
+
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new UserException(UserErrorCode.EMAIL_ALREADY_EXISTS);
         }
