@@ -8,6 +8,11 @@ spring:
     password: ${DB_PASSWORD:root}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
   jpa:
     hibernate:
       ddl-auto: ${DDL_AUTO:update}
@@ -36,5 +41,36 @@ management:
       enabled: true
 
 jwt:
-  secret: ${JWT_SECRET:"55ca298dcfc216e215622e3f48a251abaa4e8bb973074f065ab170e311acc15811d01a2407290c3ac143648196306d4a6f666a4ed364d3df633e08eb184bb0aea0f2edde4fd2d7fa68ea95ddbc421ff532ce47bde775975911042d665bc22d88a9fa26a03bb4d25530b8cdeb1247d87c9e3efcd721e368b0566b00a43308a729"}
-  expiration: ${JWT_EXPIRATION:86400000}
+  secret: ${JWT_SECRET}
+  access-token-expiration: ${JWT_ACCESS_EXPIRATION:900000}
+  refresh-token-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
+
+grpc:
+  server:
+    port: ${GRPC_PORT:9091}
+
+app:
+  resend:
+    api-key: ${APP_RESEND_API_KEY}
+    from-email: FlipNote <no-reply@flipnote.site>
+  client:
+    url: ${APP_CLIENT_URL:http://localhost:3000}
+    paths:
+      password-reset: /password-reset
+      social-link-success: /social-link/success
+      social-link-failure: /social-link/failure
+      social-link-conflict: /social-link/conflict
+      social-login-success: /social-login/success
+      social-login-failure: /social-login/failure
+  oauth2:
+    providers:
+      google:
+        client-id: ${GOOGLE_CLIENT_ID:}
+        client-secret: ${GOOGLE_CLIENT_SECRET:}
+        redirect-uri: /oauth2/callback/google
+        authorization-uri: https://accounts.google.com/o/oauth2/v2/auth
+        token-uri: https://oauth2.googleapis.com/token
+        user-info-uri: https://www.googleapis.com/oauth2/v3/userinfo
+        scope:
+          - email
+          - profile
