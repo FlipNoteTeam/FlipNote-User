@@ -16,6 +16,10 @@ public class SessionInvalidationRepository {
     private final StringRedisTemplate redisTemplate;
 
     public void invalidate(Long userId, long ttlMillis) {
+        if (ttlMillis <= 0) {
+            return;
+        }
+
         redisTemplate.opsForValue().set(
                 KEY_PREFIX + userId,
                 String.valueOf(System.currentTimeMillis()),
