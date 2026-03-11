@@ -11,7 +11,8 @@ import flipnote.image.grpc.v1.ImageCommandServiceGrpc;
 import flipnote.image.grpc.v1.Type;
 import flipnote.user.auth.infrastructure.jwt.JwtProvider;
 import flipnote.user.auth.infrastructure.redis.SessionInvalidationRepository;
-import flipnote.user.global.exception.UserException;
+import flipnote.user.global.error.ImageErrorCode;
+import flipnote.user.global.exception.BizException;
 import flipnote.user.user.domain.User;
 import flipnote.user.user.domain.UserErrorCode;
 import flipnote.user.user.domain.UserRepository;
@@ -38,7 +39,7 @@ public class UserService {
 
 	public UserInfoResponse getUserInfo(Long userId) {
 		User user = userRepository.findByIdAndStatus(userId, User.Status.ACTIVE)
-			.orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
+			.orElseThrow(() -> new BizException(UserErrorCode.USER_NOT_FOUND));
 		return UserInfoResponse.from(user);
 	}
 
@@ -49,21 +50,25 @@ public class UserService {
 		String profileImageUrl = null;
 		Long imageRefId = null;
 		if (request.getImageRefId() != null) {
-			ChangeImageResponse changeImageResponse = imageCommandServiceStub.changeImage(
-				ChangeImageRequest.newBuilder()
-					.setReferenceType(Type.USER)
-					.setReferenceId(userId)
-					.setImageRefId(request.getImageRefId())
-					.build());
+            try {
+                ChangeImageResponse changeImageResponse = imageCommandServiceStub.changeImage(
+                    ChangeImageRequest.newBuilder()
+                        .setReferenceType(Type.USER)
+                        .setReferenceId(userId)
+                        .setImageRefId(request.getImageRefId())
+                        .build());
 
-			GetUrlByReferenceResponse urlResponse = imageCommandServiceStub.getUrlByReference(
-				GetUrlByReferenceRequest.newBuilder()
-					.setReferenceType(Type.USER)
-					.setReferenceId(userId)
-					.build());
+                GetUrlByReferenceResponse urlResponse = imageCommandServiceStub.getUrlByReference(
+                    GetUrlByReferenceRequest.newBuilder()
+                        .setReferenceType(Type.USER)
+                        .setReferenceId(userId)
+                        .build());
 
-			profileImageUrl = urlResponse.getImageUrl();
-			imageRefId = changeImageResponse.getImageRefId();
+                profileImageUrl = urlResponse.getImageUrl();
+                imageRefId = changeImageResponse.getImageRefId();
+            } catch (Exception ex) {
+                throw new BizException(ImageErrorCode.IMAGE_SERVICE_ERROR);
+            }
 		}
 
 		user.updateProfile(request.getNickname(), request.getPhone(), request.getSmsAgree(), profileImageUrl);
@@ -79,6 +84,6 @@ public class UserService {
 
 	private User findActiveUser(Long userId) {
 		return userRepository.findByIdAndStatus(userId, User.Status.ACTIVE)
-			.orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
+			.orElseThrow(() -> new BizException(UserErrorCode.USER_NOT_FOUND));
 	}
 }
