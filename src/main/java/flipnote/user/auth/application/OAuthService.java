@@ -9,7 +9,7 @@ import flipnote.user.auth.infrastructure.oauth.PkceUtil;
 import flipnote.user.auth.infrastructure.redis.SocialLinkTokenRepository;
 import flipnote.user.global.config.OAuthProperties;
 import flipnote.user.global.constants.HttpConstants;
-import flipnote.user.global.exception.UserException;
+import flipnote.user.global.exception.BizException;
 import flipnote.user.user.domain.OAuthLink;
 import flipnote.user.user.domain.OAuthLinkRepository;
 import flipnote.user.user.domain.User;
@@ -75,7 +75,7 @@ public class OAuthService {
 
         OAuthLink oAuthLink = oAuthLinkRepository
                 .findByProviderAndProviderIdWithUser(userInfo.getProvider(), userInfo.getProviderId())
-                .orElseThrow(() -> new UserException(AuthErrorCode.NOT_REGISTERED_SOCIAL_ACCOUNT));
+                .orElseThrow(() -> new BizException(AuthErrorCode.NOT_REGISTERED_SOCIAL_ACCOUNT));
 
         return jwtProvider.generateTokenPair(oAuthLink.getUser());
     }
@@ -84,7 +84,7 @@ public class OAuthService {
     public void linkSocialAccount(String providerName, String code, String state,
                                   String codeVerifier, HttpServletRequest request) {
         Long userId = socialLinkTokenRepository.findUserIdByState(state)
-                .orElseThrow(() -> new UserException(AuthErrorCode.INVALID_SOCIAL_LINK_TOKEN));
+                .orElseThrow(() -> new BizException(AuthErrorCode.INVALID_SOCIAL_LINK_TOKEN));
 
         socialLinkTokenRepository.delete(state);
 
@@ -92,11 +92,11 @@ public class OAuthService {
 
         if (oAuthLinkRepository.existsByUser_IdAndProviderAndProviderId(
                 userId, userInfo.getProvider(), userInfo.getProviderId())) {
-            throw new UserException(AuthErrorCode.ALREADY_LINKED_SOCIAL_ACCOUNT);
+            throw new BizException(AuthErrorCode.ALREADY_LINKED_SOCIAL_ACCOUNT);
         }
 
         User user = userRepository.findByIdAndStatus(userId, User.Status.ACTIVE)
-                .orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
+                .orElseThrow(() -> new BizException(UserErrorCode.USER_NOT_FOUND));
 
         OAuthLink link = OAuthLink.builder()
                 .provider(userInfo.getProvider())
@@ -117,12 +117,12 @@ public class OAuthService {
     private OAuthProperties.Provider resolveProvider(String providerName) {
         Map<String, OAuthProperties.Provider> providers = oAuthProperties.getProviders();
         if (providers == null) {
-            throw new UserException(AuthErrorCode.INVALID_OAUTH_PROVIDER);
+            throw new BizException(AuthErrorCode.INVALID_OAUTH_PROVIDER);
         }
         OAuthProperties.Provider provider = providers.get(providerName.toLowerCase());
         if (provider == null) {
             log.warn("지원하지 않는 OAuth Provider: {}", providerName);
-            throw new UserException(AuthErrorCode.INVALID_OAUTH_PROVIDER);
+            throw new BizException(AuthErrorCode.INVALID_OAUTH_PROVIDER);
         }
         return provider;
     }

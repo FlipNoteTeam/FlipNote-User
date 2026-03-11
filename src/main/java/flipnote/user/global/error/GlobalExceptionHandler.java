@@ -1,6 +1,6 @@
 package flipnote.user.global.error;
 
-import flipnote.user.global.exception.UserException;
+import flipnote.user.global.exception.BizException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,9 +15,13 @@ import java.util.List;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(UserException.class)
-    public ResponseEntity<ApiResponse<Void>> handleUserException(UserException e) {
-        log.warn("UserException: {}", e.getMessage());
+    @ExceptionHandler(BizException.class)
+    public ResponseEntity<ApiResponse<Void>> handleBizException(BizException e) {
+        log.warn("BizException: code={}, status={}, message={}",
+            e.getErrorCode().getCode(),
+            e.getErrorCode().getStatus(),
+            e.getErrorCode().getMessage()
+        );
         return ResponseEntity.status(e.getErrorCode().getStatus()).body(ApiResponse.error(e.getErrorCode()));
     }
 

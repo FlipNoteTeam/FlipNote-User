@@ -25,7 +25,11 @@ spring:
 
   grpc:
     server:
-      port: ${GRPC_PORT:9091}
+      port: ${GRPC_PORT:9092}
+    client:
+      channels:
+        image-service:
+          address: static://image-service:9092
 
 server:
   port: 8081

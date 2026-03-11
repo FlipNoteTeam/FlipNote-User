@@ -2,7 +2,7 @@ package flipnote.user.auth.presentation;
 
 import flipnote.user.auth.application.OAuthService;
 import flipnote.user.auth.domain.AuthErrorCode;
-import flipnote.user.global.exception.UserException;
+import flipnote.user.global.exception.BizException;
 import flipnote.user.auth.domain.TokenPair;
 import flipnote.user.global.config.ClientProperties;
 import flipnote.user.global.constants.HttpConstants;
@@ -86,7 +86,7 @@ public class OAuthController {
             return ResponseEntity.status(HttpStatus.FOUND)
                     .location(URI.create(clientProperties.getUrl() + clientProperties.getPaths().getSocialLinkSuccess()))
                     .build();
-        } catch (UserException e) {
+        } catch (BizException e) {
             log.warn("소셜 계정 연동 처리 실패. provider: {}", provider, e);
             if (e.getErrorCode() == AuthErrorCode.ALREADY_LINKED_SOCIAL_ACCOUNT) {
                 return ResponseEntity.status(HttpStatus.FOUND)
