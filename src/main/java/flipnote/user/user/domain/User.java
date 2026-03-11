@@ -15,6 +15,9 @@ import java.time.LocalDateTime;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class User extends BaseEntity {
 
+    private static final String DEFAULT_PROFILE_IMAGE_URL =
+            "https://flipnote-bucket.s3.ap-northeast-2.amazonaws.com/image/default/user.png";
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -54,6 +57,7 @@ public class User extends BaseEntity {
         this.password = password;
         this.name = name;
         this.nickname = nickname;
+        this.profileImageUrl = DEFAULT_PROFILE_IMAGE_URL;
         this.phone = phone;
         this.smsAgree = smsAgree;
         this.role = role != null ? role : Role.USER;
