@@ -15,14 +15,14 @@ public class UserUpdateResponse {
     private String profileImageUrl;
     private Long imageRefId;
 
-    public static UserUpdateResponse from(User user) {
+    public static UserUpdateResponse from(User user, Long imageRefId) {
         return new UserUpdateResponse(
-                user.getId(),
-                user.getNickname(),
-                user.getPhone(),
-                user.isSmsAgree(),
-                user.getProfileImageUrl(),
-                null
+            user.getId(),
+            user.getNickname(),
+            user.getPhone(),
+            user.isSmsAgree(),
+            user.getProfileImageUrl(),
+            imageRefId
         );
     }
 }
