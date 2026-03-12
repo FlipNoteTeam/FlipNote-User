@@ -21,7 +21,9 @@ import flipnote.user.user.presentation.dto.response.MyInfoResponse;
 import flipnote.user.user.presentation.dto.response.UserInfoResponse;
 import flipnote.user.user.presentation.dto.response.UserUpdateResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -58,15 +60,10 @@ public class UserService {
                         .setImageRefId(request.getImageRefId())
                         .build());
 
-                GetUrlByReferenceResponse urlResponse = imageCommandServiceStub.getUrlByReference(
-                    GetUrlByReferenceRequest.newBuilder()
-                        .setReferenceType(Type.USER)
-                        .setReferenceId(userId)
-                        .build());
-
-                profileImageUrl = urlResponse.getImageUrl();
+                profileImageUrl = changeImageResponse.getUrl();
                 imageRefId = changeImageResponse.getImageRefId();
             } catch (Exception ex) {
+				log.error("updateProfile", ex);
                 throw new BizException(ImageErrorCode.IMAGE_SERVICE_ERROR);
             }
 		}
