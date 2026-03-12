@@ -50,7 +50,6 @@ public class UserService {
 		User user = findActiveUser(userId);
 
 		String profileImageUrl = null;
-		Long imageRefId = null;
 		if (request.getImageRefId() != null) {
             try {
                 ChangeImageResponse changeImageResponse = imageCommandServiceStub.changeImage(
@@ -61,7 +60,6 @@ public class UserService {
                         .build());
 
                 profileImageUrl = changeImageResponse.getUrl();
-                imageRefId = changeImageResponse.getImageRefId();
             } catch (Exception ex) {
 				log.error("updateProfile", ex);
                 throw new BizException(ImageErrorCode.IMAGE_SERVICE_ERROR);
@@ -69,7 +67,7 @@ public class UserService {
 		}
 
 		user.updateProfile(request.getNickname(), request.getPhone(), request.getSmsAgree(), profileImageUrl);
-		return UserUpdateResponse.from(user, imageRefId);
+		return UserUpdateResponse.from(user, request.getImageRefId());
 	}
 
 	@Transactional
