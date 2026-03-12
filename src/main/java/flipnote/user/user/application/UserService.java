@@ -3,10 +3,10 @@ package flipnote.user.user.application;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import flipnote.image.grpc.v1.ActivateImageRequest;
+import flipnote.image.grpc.v1.ActivateImageResponse;
 import flipnote.image.grpc.v1.ChangeImageRequest;
 import flipnote.image.grpc.v1.ChangeImageResponse;
-import flipnote.image.grpc.v1.GetUrlByReferenceRequest;
-import flipnote.image.grpc.v1.GetUrlByReferenceResponse;
 import flipnote.image.grpc.v1.ImageCommandServiceGrpc;
 import flipnote.image.grpc.v1.Type;
 import flipnote.user.auth.infrastructure.jwt.JwtProvider;
@@ -51,19 +51,30 @@ public class UserService {
 
 		String profileImageUrl = null;
 		if (request.getImageRefId() != null) {
-            try {
-                ChangeImageResponse changeImageResponse = imageCommandServiceStub.changeImage(
-                    ChangeImageRequest.newBuilder()
-                        .setReferenceType(Type.USER)
-                        .setReferenceId(userId)
-                        .setImageRefId(request.getImageRefId())
-                        .build());
+			try {
+				if (User.DEFAULT_PROFILE_IMAGE_URL.equals(user.getProfileImageUrl())) {
+					ActivateImageResponse activateImageResponse = imageCommandServiceStub.activateImage(
+						ActivateImageRequest.newBuilder()
+							.setReferenceType(Type.USER)
+							.setReferenceId(userId)
+							.setImageRefId(request.getImageRefId())
+							.build());
 
-                profileImageUrl = changeImageResponse.getUrl();
-            } catch (Exception ex) {
+					profileImageUrl = activateImageResponse.getUrl();
+				} else {
+					ChangeImageResponse changeImageResponse = imageCommandServiceStub.changeImage(
+						ChangeImageRequest.newBuilder()
+							.setReferenceType(Type.USER)
+							.setReferenceId(userId)
+							.setImageRefId(request.getImageRefId())
+							.build());
+
+					profileImageUrl = changeImageResponse.getUrl();
+				}
+			} catch (Exception ex) {
 				log.error("updateProfile", ex);
-                throw new BizException(ImageErrorCode.IMAGE_SERVICE_ERROR);
-            }
+				throw new BizException(ImageErrorCode.IMAGE_SERVICE_ERROR);
+			}
 		}
 
 		user.updateProfile(request.getNickname(), request.getPhone(), request.getSmsAgree(), profileImageUrl);
