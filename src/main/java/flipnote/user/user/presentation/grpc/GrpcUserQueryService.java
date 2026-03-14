@@ -2,6 +2,8 @@ package flipnote.user.user.presentation.grpc;
 
 import flipnote.user.user.domain.User;
 import flipnote.user.user.domain.UserRepository;
+import flipnote.user.grpc.GetUserByEmailRequest;
+import flipnote.user.grpc.GetUserByEmailResponse;
 import flipnote.user.grpc.GetUserRequest;
 import flipnote.user.grpc.GetUserResponse;
 import flipnote.user.grpc.GetUsersRequest;
@@ -57,6 +59,28 @@ public class GrpcUserQueryService extends UserQueryServiceGrpc.UserQueryServiceI
             responseObserver.onCompleted();
         } catch (Exception e) {
             log.error("gRPC getUsers error. userIds: {}", request.getUserIdsList(), e);
+            responseObserver.onError(Status.INTERNAL.withDescription("Internal error").asRuntimeException());
+        }
+    }
+
+    @Override
+    public void getUserByEmail(GetUserByEmailRequest request, StreamObserver<GetUserByEmailResponse> responseObserver) {
+        try {
+            User user = userRepository.findByEmailAndStatus(request.getEmail(), User.Status.ACTIVE)
+                    .orElse(null);
+
+            GetUserByEmailResponse.Builder responseBuilder = GetUserByEmailResponse.newBuilder();
+
+            if (user != null) {
+                responseBuilder.setExists(true).setUser(toResponse(user));
+            } else {
+                responseBuilder.setExists(false);
+            }
+
+            responseObserver.onNext(responseBuilder.build());
+            responseObserver.onCompleted();
+        } catch (Exception e) {
+            log.error("gRPC getUserByEmail error. email: {}", request.getEmail(), e);
             responseObserver.onError(Status.INTERNAL.withDescription("Internal error").asRuntimeException());
         }
     }

@@ -9,6 +9,7 @@ package user_query;
 service UserQueryService {
   rpc GetUser(GetUserRequest) returns (GetUserResponse);
   rpc GetUsers(GetUsersRequest) returns (GetUsersResponse);
+  rpc GetUserByEmail(GetUserByEmailRequest) returns (GetUserByEmailResponse);
 }
 
 message GetUserRequest {
@@ -28,4 +29,13 @@ message GetUsersRequest {
 
 message GetUsersResponse {
   repeated GetUserResponse users = 1;
+}
+
+message GetUserByEmailRequest {
+  string email = 1;
+}
+
+message GetUserByEmailResponse {
+  bool exists = 1;
+  GetUserResponse user = 2;
 }
