@@ -69,7 +69,7 @@ app:
   client:
     url: ${APP_CLIENT_URL:http://localhost:3000}
     paths:
-      password-reset: /password-reset
+      password-reset: /reset-password
       social-link-success: /social-link/success
       social-link-failure: /social-link/failure
       social-link-conflict: /social-link/conflict
