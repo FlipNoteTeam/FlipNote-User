@@ -13,6 +13,7 @@ import java.util.Map;
 @ConfigurationProperties(prefix = "app.oauth2")
 public class OAuthProperties {
 
+    private final String baseUrl;
     private final Map<String, Provider> providers;
 
     @Getter

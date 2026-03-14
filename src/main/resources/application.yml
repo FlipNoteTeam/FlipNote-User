@@ -76,6 +76,7 @@ app:
       social-login-success: /social-login/success
       social-login-failure: /social-login/failure
   oauth2:
+    base-url: ${OAUTH_BASE_URL:https://api3.flipnote.site}
     providers:
       google:
         client-id: ${GOOGLE_CLIENT_ID:}
