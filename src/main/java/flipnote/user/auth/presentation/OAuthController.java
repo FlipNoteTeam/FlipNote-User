@@ -8,7 +8,6 @@ import flipnote.user.global.config.ClientProperties;
 import flipnote.user.global.constants.HttpConstants;
 import flipnote.user.global.util.CookieUtil;
 import flipnote.user.auth.infrastructure.jwt.JwtProvider;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,9 +31,8 @@ public class OAuthController {
     @GetMapping("/oauth2/authorization/{provider}")
     public ResponseEntity<Void> redirectToProvider(
             @PathVariable String provider,
-            @RequestHeader(value = HttpConstants.USER_ID_HEADER, required = false) Long userId,
-            HttpServletRequest request) {
-        OAuthService.AuthorizationRedirect redirect = oAuthService.getAuthorizationUri(provider, request, userId);
+            @RequestHeader(value = HttpConstants.USER_ID_HEADER, required = false) Long userId) {
+        OAuthService.AuthorizationRedirect redirect = oAuthService.getAuthorizationUri(provider, userId);
 
         return ResponseEntity.status(HttpStatus.FOUND)
                 .header(HttpHeaders.SET_COOKIE, redirect.verifierCookie().toString())
@@ -48,22 +46,21 @@ public class OAuthController {
             @RequestParam String code,
             @RequestParam(required = false) String state,
             @CookieValue(HttpConstants.OAUTH_VERIFIER_COOKIE) String codeVerifier,
-            HttpServletRequest request,
             HttpServletResponse response) {
 
         CookieUtil.deleteCookie(response, HttpConstants.OAUTH_VERIFIER_COOKIE);
 
         boolean isSocialLinkRequest = StringUtils.hasText(state);
         if (isSocialLinkRequest) {
-            return handleSocialLink(provider, code, state, codeVerifier, request);
+            return handleSocialLink(provider, code, state, codeVerifier);
         }
-        return handleSocialLogin(provider, code, codeVerifier, request, response);
+        return handleSocialLogin(provider, code, codeVerifier, response);
     }
 
     private ResponseEntity<Void> handleSocialLogin(String provider, String code, String codeVerifier,
-                                                    HttpServletRequest request, HttpServletResponse response) {
+                                                    HttpServletResponse response) {
         try {
-            TokenPair tokenPair = oAuthService.socialLogin(provider, code, codeVerifier, request);
+            TokenPair tokenPair = oAuthService.socialLogin(provider, code, codeVerifier);
             CookieUtil.addCookie(response, HttpConstants.ACCESS_TOKEN_COOKIE, tokenPair.accessToken(),
                     jwtProvider.getAccessTokenExpiration() / 1000);
             CookieUtil.addCookie(response, HttpConstants.REFRESH_TOKEN_COOKIE, tokenPair.refreshToken(),
@@ -80,9 +77,9 @@ public class OAuthController {
     }
 
     private ResponseEntity<Void> handleSocialLink(String provider, String code, String state,
-                                                   String codeVerifier, HttpServletRequest request) {
+                                                   String codeVerifier) {
         try {
-            oAuthService.linkSocialAccount(provider, code, state, codeVerifier, request);
+            oAuthService.linkSocialAccount(provider, code, state, codeVerifier);
             return ResponseEntity.status(HttpStatus.FOUND)
                     .location(URI.create(clientProperties.getUrl() + clientProperties.getPaths().getSocialLinkSuccess()))
                     .build();

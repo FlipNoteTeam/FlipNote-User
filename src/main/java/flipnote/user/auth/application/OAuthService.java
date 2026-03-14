@@ -15,7 +15,7 @@ import flipnote.user.user.domain.OAuthLinkRepository;
 import flipnote.user.user.domain.User;
 import flipnote.user.user.domain.UserErrorCode;
 import flipnote.user.user.domain.UserRepository;
-import jakarta.servlet.http.HttpServletRequest;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseCookie;
@@ -43,8 +43,7 @@ public class OAuthService {
 
     private static final int VERIFIER_COOKIE_MAX_AGE = 180;
 
-    public AuthorizationRedirect getAuthorizationUri(String providerName, HttpServletRequest request,
-                                                     Long userId) {
+    public AuthorizationRedirect getAuthorizationUri(String providerName, Long userId) {
         OAuthProperties.Provider provider = resolveProvider(providerName);
 
         String codeVerifier = pkceUtil.generateCodeVerifier();
@@ -56,7 +55,7 @@ public class OAuthService {
             socialLinkTokenRepository.save(userId, state);
         }
 
-        String authorizeUri = oAuthApiClient.buildAuthorizeUri(request, provider, codeChallenge, state);
+        String authorizeUri = oAuthApiClient.buildAuthorizeUri(provider, codeChallenge, state);
 
         ResponseCookie verifierCookie = ResponseCookie.from(HttpConstants.OAUTH_VERIFIER_COOKIE, codeVerifier)
                 .httpOnly(true)
@@ -69,9 +68,8 @@ public class OAuthService {
         return new AuthorizationRedirect(authorizeUri, verifierCookie);
     }
 
-    public TokenPair socialLogin(String providerName, String code, String codeVerifier,
-                                 HttpServletRequest request) {
-        OAuth2UserInfo userInfo = getOAuth2UserInfo(providerName, code, codeVerifier, request);
+    public TokenPair socialLogin(String providerName, String code, String codeVerifier) {
+        OAuth2UserInfo userInfo = getOAuth2UserInfo(providerName, code, codeVerifier);
 
         OAuthLink oAuthLink = oAuthLinkRepository
                 .findByProviderAndProviderIdWithUser(userInfo.getProvider(), userInfo.getProviderId())
@@ -82,13 +80,13 @@ public class OAuthService {
 
     @Transactional
     public void linkSocialAccount(String providerName, String code, String state,
-                                  String codeVerifier, HttpServletRequest request) {
+                                  String codeVerifier) {
         Long userId = socialLinkTokenRepository.findUserIdByState(state)
                 .orElseThrow(() -> new BizException(AuthErrorCode.INVALID_SOCIAL_LINK_TOKEN));
 
         socialLinkTokenRepository.delete(state);
 
-        OAuth2UserInfo userInfo = getOAuth2UserInfo(providerName, code, codeVerifier, request);
+        OAuth2UserInfo userInfo = getOAuth2UserInfo(providerName, code, codeVerifier);
 
         if (oAuthLinkRepository.existsByUser_IdAndProviderAndProviderId(
                 userId, userInfo.getProvider(), userInfo.getProviderId())) {
@@ -107,9 +105,9 @@ public class OAuthService {
     }
 
     private OAuth2UserInfo getOAuth2UserInfo(String providerName, String code,
-                                              String codeVerifier, HttpServletRequest request) {
+                                              String codeVerifier) {
         OAuthProperties.Provider provider = resolveProvider(providerName);
-        String accessToken = oAuthApiClient.requestAccessToken(provider, code, codeVerifier, request);
+        String accessToken = oAuthApiClient.requestAccessToken(provider, code, codeVerifier);
         Map<String, Object> attributes = oAuthApiClient.requestUserInfo(provider, accessToken);
         return oAuthApiClient.createUserInfo(providerName, attributes);
     }

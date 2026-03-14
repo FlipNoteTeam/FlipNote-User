@@ -8,11 +8,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import flipnote.user.global.config.OAuthProperties;
-import jakarta.servlet.http.HttpServletRequest;
+
 import lombok.RequiredArgsConstructor;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
@@ -23,14 +22,15 @@ public class OAuthApiClient {
 
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
+    private final OAuthProperties oAuthProperties;
 
     public String requestAccessToken(OAuthProperties.Provider provider, String code,
-                                     String codeVerifier, HttpServletRequest request) {
+                                     String codeVerifier) {
         MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add("grant_type", "authorization_code");
         params.add("client_id", provider.getClientId());
         params.add("client_secret", provider.getClientSecret());
-        params.add("redirect_uri", buildRedirectUri(request, provider.getRedirectUri()));
+        params.add("redirect_uri", buildRedirectUri(provider.getRedirectUri()));
         params.add("code", code);
         params.add("code_verifier", codeVerifier);
 
@@ -70,11 +70,11 @@ public class OAuthApiClient {
         };
     }
 
-    public String buildAuthorizeUri(HttpServletRequest request, OAuthProperties.Provider provider,
+    public String buildAuthorizeUri(OAuthProperties.Provider provider,
                                     String codeChallenge, String state) {
         UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(provider.getAuthorizationUri())
                 .queryParam("client_id", provider.getClientId())
-                .queryParam("redirect_uri", buildRedirectUri(request, provider.getRedirectUri()))
+                .queryParam("redirect_uri", buildRedirectUri(provider.getRedirectUri()))
                 .queryParam("response_type", "code")
                 .queryParam("scope", String.join(" ", provider.getScope()))
                 .queryParam("code_challenge", codeChallenge)
@@ -87,9 +87,9 @@ public class OAuthApiClient {
         return builder.toUriString();
     }
 
-    private String buildRedirectUri(HttpServletRequest request, String path) {
-        return ServletUriComponentsBuilder.fromRequestUri(request)
-                .replacePath(path)
+    private String buildRedirectUri(String path) {
+        return UriComponentsBuilder.fromUriString(oAuthProperties.getBaseUrl())
+                .path(path)
                 .build()
                 .toUriString();
     }
