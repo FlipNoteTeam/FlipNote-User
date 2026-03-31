@@ -10,6 +10,7 @@ service UserQueryService {
   rpc GetUser(GetUserRequest) returns (GetUserResponse);
   rpc GetUsers(GetUsersRequest) returns (GetUsersResponse);
   rpc GetUserByEmail(GetUserByEmailRequest) returns (GetUserByEmailResponse);
+  rpc GetUserByToken(GetUserByTokenRequest) returns (GetUserByTokenResponse);
 }
 
 message GetUserRequest {
@@ -38,4 +39,13 @@ message GetUserByEmailRequest {
 message GetUserByEmailResponse {
   bool exists = 1;
   GetUserResponse user = 2;
+}
+
+message GetUserByTokenRequest {
+  string access_token = 1;
+}
+
+message GetUserByTokenResponse {
+  int64 user_id = 1;
+  string nickname = 2;
 }
