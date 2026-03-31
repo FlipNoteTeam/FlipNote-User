@@ -1,9 +1,13 @@
 package flipnote.user.user.presentation.grpc;
 
+import flipnote.user.auth.domain.TokenClaims;
+import flipnote.user.auth.infrastructure.jwt.JwtProvider;
 import flipnote.user.user.domain.User;
 import flipnote.user.user.domain.UserRepository;
 import flipnote.user.grpc.GetUserByEmailRequest;
 import flipnote.user.grpc.GetUserByEmailResponse;
+import flipnote.user.grpc.GetUserByTokenRequest;
+import flipnote.user.grpc.GetUserByTokenResponse;
 import flipnote.user.grpc.GetUserRequest;
 import flipnote.user.grpc.GetUserResponse;
 import flipnote.user.grpc.GetUsersRequest;
@@ -23,6 +27,7 @@ import java.util.List;
 public class GrpcUserQueryService extends UserQueryServiceGrpc.UserQueryServiceImplBase {
 
     private final UserRepository userRepository;
+    private final JwtProvider jwtProvider;
 
     @Override
     public void getUser(GetUserRequest request, StreamObserver<GetUserResponse> responseObserver) {
@@ -81,6 +86,40 @@ public class GrpcUserQueryService extends UserQueryServiceGrpc.UserQueryServiceI
             responseObserver.onCompleted();
         } catch (Exception e) {
             log.error("gRPC getUserByEmail error. email: {}", request.getEmail(), e);
+            responseObserver.onError(Status.INTERNAL.withDescription("Internal error").asRuntimeException());
+        }
+    }
+
+    @Override
+    public void getUserByToken(GetUserByTokenRequest request, StreamObserver<GetUserByTokenResponse> responseObserver) {
+        try {
+            if (!jwtProvider.isTokenValid(request.getAccessToken())) {
+                responseObserver.onError(
+                        Status.UNAUTHENTICATED.withDescription("유효하지 않은 토큰입니다.").asRuntimeException()
+                );
+                return;
+            }
+
+            TokenClaims claims = jwtProvider.extractClaims(request.getAccessToken());
+            User user = userRepository.findByIdAndStatus(claims.userId(), User.Status.ACTIVE)
+                    .orElse(null);
+
+            if (user == null) {
+                responseObserver.onError(
+                        Status.NOT_FOUND.withDescription("사용자를 찾을 수 없습니다.").asRuntimeException()
+                );
+                return;
+            }
+
+            GetUserByTokenResponse response = GetUserByTokenResponse.newBuilder()
+                    .setUserId(user.getId())
+                    .setNickname(user.getNickname())
+                    .build();
+
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+        } catch (Exception e) {
+            log.error("gRPC getUserByToken error", e);
             responseObserver.onError(Status.INTERNAL.withDescription("Internal error").asRuntimeException());
         }
     }
