@@ -23,13 +23,6 @@ repositories {
 
 extra["springGrpcVersion"] = "1.0.2"
 
-
-dependencyManagement {
-    imports {
-        mavenBom("org.springframework.grpc:spring-grpc-dependencies:1.0.2")
-    }
-}
-
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-web")
