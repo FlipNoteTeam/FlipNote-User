@@ -12,11 +12,13 @@ import flipnote.image.grpc.v1.ChangeImageRequest;
 import flipnote.image.grpc.v1.ChangeImageResponse;
 import flipnote.image.grpc.v1.ImageCommandServiceGrpc;
 import flipnote.image.grpc.v1.Type;
+import flipnote.user.domain.AuthErrorCode;
 import flipnote.user.domain.ImageErrorCode;
-import flipnote.user.domain.entity.User;
+import flipnote.user.domain.TokenClaims;
 import flipnote.user.domain.UserErrorCode;
-import flipnote.user.domain.repository.UserRepository;
 import flipnote.user.domain.common.BizException;
+import flipnote.user.domain.entity.User;
+import flipnote.user.domain.repository.UserRepository;
 import flipnote.user.infrastructure.jwt.JwtProvider;
 import flipnote.user.infrastructure.redis.SessionInvalidationRepository;
 import flipnote.user.interfaces.http.dto.request.UpdateProfileRequest;
@@ -97,6 +99,18 @@ public class UserService {
 
 	public List<User> findActiveUsersByIds(List<Long> userIds) {
 		return userRepository.findByIdInAndStatus(userIds, User.Status.ACTIVE);
+	}
+
+	public Optional<User> findActiveUserByEmail(String email) {
+		return userRepository.findByEmailAndStatus(email, User.Status.ACTIVE);
+	}
+
+	public User findUserByToken(String token) {
+		if (!jwtProvider.isTokenValid(token)) {
+			throw new BizException(AuthErrorCode.INVALID_TOKEN);
+		}
+		TokenClaims claims = jwtProvider.extractClaims(token);
+		return findActiveUser(claims.userId());
 	}
 
 	private User findActiveUser(Long userId) {
