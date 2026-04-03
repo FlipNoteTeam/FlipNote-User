@@ -18,6 +18,6 @@ RUN apt-get update \
 
 COPY --from=build /app/build/libs/user-0.0.1-SNAPSHOT.jar .
 
-EXPOSE 8080
+EXPOSE 8081
 
 ENTRYPOINT ["java", "-jar", "user-0.0.1-SNAPSHOT.jar"]
