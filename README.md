@@ -122,7 +122,7 @@ Swagger UI는 `http://localhost:8081/users/swagger-ui.html`에서 확인할 수 
 docker build -t flipnote-user .
 
 # 컨테이너 실행
-docker run -p 8081:8080 \
+docker run -p 8081:8081 \
   -e DB_URL=... \
   -e JWT_SECRET=... \
   flipnote-user
