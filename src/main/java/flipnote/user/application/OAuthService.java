@@ -1,29 +1,27 @@
 package flipnote.user.application;
 
-import flipnote.user.domain.AuthErrorCode;
-import flipnote.user.domain.entity.OAuthLink;
-import flipnote.user.domain.repository.OAuthLinkRepository;
-import flipnote.user.domain.TokenPair;
-import flipnote.user.domain.entity.User;
-import flipnote.user.domain.UserErrorCode;
-import flipnote.user.domain.repository.UserRepository;
-import flipnote.user.domain.common.BizException;
-import flipnote.user.infrastructure.oauth.OAuthProperties;
-import flipnote.user.infrastructure.jwt.JwtProvider;
-import flipnote.user.infrastructure.oauth.OAuthApiClient;
-import flipnote.user.infrastructure.oauth.OAuth2UserInfo;
-import flipnote.user.infrastructure.oauth.PkceUtil;
-import flipnote.user.infrastructure.redis.SocialLinkTokenRepository;
-import flipnote.user.interfaces.http.common.HttpConstants;
-import jakarta.servlet.http.HttpServletRequest;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.ResponseCookie;
+import java.util.Map;
+import java.util.UUID;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Map;
-import java.util.UUID;
+import flipnote.user.domain.AuthErrorCode;
+import flipnote.user.domain.TokenPair;
+import flipnote.user.domain.UserErrorCode;
+import flipnote.user.domain.common.BizException;
+import flipnote.user.domain.entity.OAuthLink;
+import flipnote.user.domain.entity.User;
+import flipnote.user.domain.repository.OAuthLinkRepository;
+import flipnote.user.domain.repository.UserRepository;
+import flipnote.user.infrastructure.jwt.JwtProvider;
+import flipnote.user.infrastructure.oauth.OAuth2UserInfo;
+import flipnote.user.infrastructure.oauth.OAuthApiClient;
+import flipnote.user.infrastructure.oauth.OAuthProperties;
+import flipnote.user.infrastructure.oauth.PkceUtil;
+import flipnote.user.infrastructure.redis.SocialLinkTokenRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
@@ -31,99 +29,85 @@ import java.util.UUID;
 @Transactional(readOnly = true)
 public class OAuthService {
 
-    private final PkceUtil pkceUtil;
-    private final OAuthApiClient oAuthApiClient;
-    private final OAuthLinkRepository oAuthLinkRepository;
-    private final UserRepository userRepository;
-    private final SocialLinkTokenRepository socialLinkTokenRepository;
-    private final JwtProvider jwtProvider;
-    private final OAuthProperties oAuthProperties;
+	private final PkceUtil pkceUtil;
+	private final OAuthApiClient oAuthApiClient;
+	private final OAuthLinkRepository oAuthLinkRepository;
+	private final UserRepository userRepository;
+	private final SocialLinkTokenRepository socialLinkTokenRepository;
+	private final JwtProvider jwtProvider;
+	private final OAuthProperties oAuthProperties;
 
-    public record AuthorizationRedirect(String authorizeUri, ResponseCookie verifierCookie) {}
+	public record AuthorizationRedirect(String authorizeUri, String codeVerifier) {
+	}
 
-    private static final int VERIFIER_COOKIE_MAX_AGE = 180;
+	public AuthorizationRedirect getAuthorizationUri(String providerName, Long userId) {
+		OAuthProperties.Provider provider = resolveProvider(providerName);
 
-    public AuthorizationRedirect getAuthorizationUri(String providerName, HttpServletRequest request,
-                                                     Long userId) {
-        OAuthProperties.Provider provider = resolveProvider(providerName);
+		String codeVerifier = pkceUtil.generateCodeVerifier();
+		String codeChallenge = pkceUtil.generateCodeChallenge(codeVerifier);
 
-        String codeVerifier = pkceUtil.generateCodeVerifier();
-        String codeChallenge = pkceUtil.generateCodeChallenge(codeVerifier);
+		String state = null;
+		if (userId != null) {
+			state = UUID.randomUUID().toString();
+			socialLinkTokenRepository.save(userId, state);
+		}
 
-        String state = null;
-        if (userId != null) {
-            state = UUID.randomUUID().toString();
-            socialLinkTokenRepository.save(userId, state);
-        }
+		String authorizeUri = oAuthApiClient.buildAuthorizeUri(provider, codeChallenge, state);
 
-        String authorizeUri = oAuthApiClient.buildAuthorizeUri(request, provider, codeChallenge, state);
+		return new AuthorizationRedirect(authorizeUri, codeVerifier);
+	}
 
-        ResponseCookie verifierCookie = ResponseCookie.from(HttpConstants.OAUTH_VERIFIER_COOKIE, codeVerifier)
-                .httpOnly(true)
-                .secure(true)
-                .path("/")
-                .maxAge(VERIFIER_COOKIE_MAX_AGE)
-                .sameSite("Lax")
-                .build();
+	public TokenPair socialLogin(String providerName, String code, String codeVerifier) {
+		OAuth2UserInfo userInfo = getOAuth2UserInfo(providerName, code, codeVerifier);
 
-        return new AuthorizationRedirect(authorizeUri, verifierCookie);
-    }
+		OAuthLink oAuthLink = oAuthLinkRepository
+			.findByProviderAndProviderIdWithUser(userInfo.getProvider(), userInfo.getProviderId())
+			.orElseThrow(() -> new BizException(AuthErrorCode.NOT_REGISTERED_SOCIAL_ACCOUNT));
 
-    public TokenPair socialLogin(String providerName, String code, String codeVerifier,
-                                 HttpServletRequest request) {
-        OAuth2UserInfo userInfo = getOAuth2UserInfo(providerName, code, codeVerifier, request);
+		return jwtProvider.generateTokenPair(oAuthLink.getUser());
+	}
 
-        OAuthLink oAuthLink = oAuthLinkRepository
-                .findByProviderAndProviderIdWithUser(userInfo.getProvider(), userInfo.getProviderId())
-                .orElseThrow(() -> new BizException(AuthErrorCode.NOT_REGISTERED_SOCIAL_ACCOUNT));
+	@Transactional
+	public void linkSocialAccount(String providerName, String code, String state, String codeVerifier) {
+		Long userId = socialLinkTokenRepository.findUserIdByState(state)
+			.orElseThrow(() -> new BizException(AuthErrorCode.INVALID_SOCIAL_LINK_TOKEN));
 
-        return jwtProvider.generateTokenPair(oAuthLink.getUser());
-    }
+		socialLinkTokenRepository.delete(state);
 
-    @Transactional
-    public void linkSocialAccount(String providerName, String code, String state,
-                                  String codeVerifier, HttpServletRequest request) {
-        Long userId = socialLinkTokenRepository.findUserIdByState(state)
-                .orElseThrow(() -> new BizException(AuthErrorCode.INVALID_SOCIAL_LINK_TOKEN));
+		OAuth2UserInfo userInfo = getOAuth2UserInfo(providerName, code, codeVerifier);
 
-        socialLinkTokenRepository.delete(state);
+		if (oAuthLinkRepository.existsByProviderAndProviderId(userInfo.getProvider(), userInfo.getProviderId())) {
+			throw new BizException(AuthErrorCode.ALREADY_LINKED_SOCIAL_ACCOUNT);
+		}
 
-        OAuth2UserInfo userInfo = getOAuth2UserInfo(providerName, code, codeVerifier, request);
+		User user = userRepository.findByIdAndStatus(userId, User.Status.ACTIVE)
+			.orElseThrow(() -> new BizException(UserErrorCode.USER_NOT_FOUND));
 
-        if (oAuthLinkRepository.existsByUser_IdAndProviderAndProviderId(
-                userId, userInfo.getProvider(), userInfo.getProviderId())) {
-            throw new BizException(AuthErrorCode.ALREADY_LINKED_SOCIAL_ACCOUNT);
-        }
+		OAuthLink link = OAuthLink.builder()
+			.provider(userInfo.getProvider())
+			.providerId(userInfo.getProviderId())
+			.user(user)
+			.build();
+		oAuthLinkRepository.save(link);
+	}
 
-        User user = userRepository.findByIdAndStatus(userId, User.Status.ACTIVE)
-                .orElseThrow(() -> new BizException(UserErrorCode.USER_NOT_FOUND));
+	private OAuth2UserInfo getOAuth2UserInfo(String providerName, String code, String codeVerifier) {
+		OAuthProperties.Provider provider = resolveProvider(providerName);
+		String accessToken = oAuthApiClient.requestAccessToken(provider, code, codeVerifier);
+		Map<String, Object> attributes = oAuthApiClient.requestUserInfo(provider, accessToken);
+		return oAuthApiClient.createUserInfo(providerName, attributes);
+	}
 
-        OAuthLink link = OAuthLink.builder()
-                .provider(userInfo.getProvider())
-                .providerId(userInfo.getProviderId())
-                .user(user)
-                .build();
-        oAuthLinkRepository.save(link);
-    }
-
-    private OAuth2UserInfo getOAuth2UserInfo(String providerName, String code,
-                                              String codeVerifier, HttpServletRequest request) {
-        OAuthProperties.Provider provider = resolveProvider(providerName);
-        String accessToken = oAuthApiClient.requestAccessToken(provider, code, codeVerifier, request);
-        Map<String, Object> attributes = oAuthApiClient.requestUserInfo(provider, accessToken);
-        return oAuthApiClient.createUserInfo(providerName, attributes);
-    }
-
-    private OAuthProperties.Provider resolveProvider(String providerName) {
-        Map<String, OAuthProperties.Provider> providers = oAuthProperties.getProviders();
-        if (providers == null) {
-            throw new BizException(AuthErrorCode.INVALID_OAUTH_PROVIDER);
-        }
-        OAuthProperties.Provider provider = providers.get(providerName.toLowerCase());
-        if (provider == null) {
-            log.warn("지원하지 않는 OAuth Provider: {}", providerName);
-            throw new BizException(AuthErrorCode.INVALID_OAUTH_PROVIDER);
-        }
-        return provider;
-    }
+	private OAuthProperties.Provider resolveProvider(String providerName) {
+		Map<String, OAuthProperties.Provider> providers = oAuthProperties.getProviders();
+		if (providers == null) {
+			throw new BizException(AuthErrorCode.INVALID_OAUTH_PROVIDER);
+		}
+		OAuthProperties.Provider provider = providers.get(providerName.toLowerCase());
+		if (provider == null) {
+			log.warn("지원하지 않는 OAuth Provider: {}", providerName);
+			throw new BizException(AuthErrorCode.INVALID_OAUTH_PROVIDER);
+		}
+		return provider;
+	}
 }

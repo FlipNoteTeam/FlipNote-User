@@ -1,4 +1,4 @@
-package flipnote.user.infrastructure.redis;
+package flipnote.user.infrastructure.mail;
 
 import org.springframework.stereotype.Component;
 

@@ -1,5 +1,6 @@
 package flipnote.user.infrastructure.redis;
 
+import flipnote.user.domain.VerificationConstants;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Repository;
@@ -12,8 +13,6 @@ public class EmailVerificationRepository {
 
     private static final String CODE_KEY_PREFIX = "email:verification:code:";
     private static final String VERIFIED_KEY_PREFIX = "email:verification:verified:";
-    private static final long CODE_TTL_MINUTES = 5;
-    private static final long VERIFIED_TTL_MINUTES = 10;
 
     private final StringRedisTemplate redisTemplate;
 
@@ -21,7 +20,7 @@ public class EmailVerificationRepository {
         redisTemplate.opsForValue().set(
                 CODE_KEY_PREFIX + email,
                 code,
-                CODE_TTL_MINUTES,
+                VerificationConstants.CODE_TTL_MINUTES,
                 TimeUnit.MINUTES
         );
     }
@@ -42,7 +41,7 @@ public class EmailVerificationRepository {
         redisTemplate.opsForValue().set(
                 VERIFIED_KEY_PREFIX + email,
                 "verified",
-                VERIFIED_TTL_MINUTES,
+                VerificationConstants.VERIFIED_TTL_MINUTES,
                 TimeUnit.MINUTES
         );
     }

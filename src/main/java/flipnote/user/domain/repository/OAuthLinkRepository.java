@@ -21,7 +21,7 @@ public interface OAuthLinkRepository extends JpaRepository<OAuthLink, Long> {
             @Param("providerId") String providerId
     );
 
-    boolean existsByUser_IdAndProviderAndProviderId(Long userId, String provider, String providerId);
+    boolean existsByProviderAndProviderId(String provider, String providerId);
 
     boolean existsByIdAndUser_Id(Long id, Long userId);
 

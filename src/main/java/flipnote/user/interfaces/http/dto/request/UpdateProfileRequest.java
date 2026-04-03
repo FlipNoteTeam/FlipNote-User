@@ -1,5 +1,6 @@
 package flipnote.user.interfaces.http.dto.request;
 
+import flipnote.user.application.command.UpdateProfileCommand;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -20,4 +21,8 @@ public class UpdateProfileRequest {
     private Boolean smsAgree;
 
     private Long imageRefId;
+
+    public UpdateProfileCommand toCommand() {
+        return new UpdateProfileCommand(nickname, phone, smsAgree, imageRefId);
+    }
 }

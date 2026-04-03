@@ -1,5 +1,6 @@
 package flipnote.user.infrastructure.redis;
 
+import flipnote.user.domain.PasswordResetConstants;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Repository;
@@ -12,7 +13,6 @@ public class PasswordResetRepository {
 
     private static final String TOKEN_KEY_PREFIX = "password:reset:token:";
     private static final String EMAIL_KEY_PREFIX = "password:reset:email:";
-    private static final long TTL_MINUTES = 30;
 
     private final StringRedisTemplate redisTemplate;
 
@@ -24,13 +24,13 @@ public class PasswordResetRepository {
         redisTemplate.opsForValue().set(
                 TOKEN_KEY_PREFIX + token,
                 email,
-                TTL_MINUTES,
+                PasswordResetConstants.TOKEN_TTL_MINUTES,
                 TimeUnit.MINUTES
         );
         redisTemplate.opsForValue().set(
                 EMAIL_KEY_PREFIX + email,
                 token,
-                TTL_MINUTES,
+                PasswordResetConstants.TOKEN_TTL_MINUTES,
                 TimeUnit.MINUTES
         );
     }

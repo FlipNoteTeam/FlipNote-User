@@ -1,4 +1,4 @@
-package flipnote.user.interfaces.http.dto.response;
+package flipnote.user.application.result;
 
 import flipnote.user.domain.entity.User;
 import lombok.AllArgsConstructor;
@@ -6,14 +6,14 @@ import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
-public class UserInfoResponse {
+public class UserInfoResult {
 
     private Long userId;
     private String nickname;
     private String profileImageUrl;
     private Long imageRefId;
 
-    public static UserInfoResponse from(User user) {
-        return new UserInfoResponse(user.getId(), user.getNickname(), user.getProfileImageUrl(), null);
+    public static UserInfoResult from(User user) {
+        return new UserInfoResult(user.getId(), user.getNickname(), user.getProfileImageUrl(), null);
     }
 }

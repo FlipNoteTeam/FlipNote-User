@@ -1,6 +1,5 @@
-package flipnote.user.interfaces.http.dto.response;
+package flipnote.user.application.result;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import flipnote.user.domain.entity.User;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -9,7 +8,7 @@ import java.time.LocalDateTime;
 
 @Getter
 @AllArgsConstructor
-public class MyInfoResponse {
+public class MyInfoResult {
 
     private Long userId;
     private String email;
@@ -19,15 +18,11 @@ public class MyInfoResponse {
     private Boolean smsAgree;
     private String profileImageUrl;
     private Long imageRefId;
-
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
-
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime modifiedAt;
 
-    public static MyInfoResponse from(User user) {
-        return new MyInfoResponse(
+    public static MyInfoResult from(User user) {
+        return new MyInfoResult(
                 user.getId(),
                 user.getEmail(),
                 user.getNickname(),

@@ -1,5 +1,6 @@
 package flipnote.user.interfaces.http.dto.request;
 
+import flipnote.user.application.command.LoginCommand;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
@@ -15,4 +16,8 @@ public class LoginRequest {
 
     @NotBlank(message = "비밀번호는 필수입니다")
     private String password;
+
+    public LoginCommand toCommand() {
+        return new LoginCommand(email, password);
+    }
 }

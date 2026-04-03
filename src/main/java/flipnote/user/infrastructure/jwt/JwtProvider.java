@@ -3,7 +3,6 @@ package flipnote.user.infrastructure.jwt;
 import flipnote.user.domain.TokenClaims;
 import flipnote.user.domain.TokenPair;
 import flipnote.user.domain.entity.User;
-import flipnote.user.infrastructure.jwt.JwtProperties;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;

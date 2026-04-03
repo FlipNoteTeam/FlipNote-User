@@ -23,10 +23,15 @@ public class GrpcExceptionHandlerImpl implements GrpcExceptionHandler {
                     .withDescription(errorCode.getMessage())
                     .asException();
         }
+        if (t instanceof StatusException e) {
+            log.warn("gRPC StatusException: status={}, description={}",
+                    e.getStatus().getCode(), e.getStatus().getDescription());
+            return e;
+        }
         if (t instanceof StatusRuntimeException e) {
             log.warn("gRPC StatusRuntimeException: status={}, description={}",
                     e.getStatus().getCode(), e.getStatus().getDescription());
-            return e.getStatus().asException();
+            return e.getStatus().asException(e.getTrailers());
         }
         log.error("gRPC Unhandled exception", t);
         return Status.INTERNAL.withDescription("Internal server error").asException();

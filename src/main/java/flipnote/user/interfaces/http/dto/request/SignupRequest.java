@@ -1,5 +1,6 @@
 package flipnote.user.interfaces.http.dto.request;
 
+import flipnote.user.application.command.SignupCommand;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -32,4 +33,8 @@ public class SignupRequest {
 
     @Pattern(regexp = "^01[0-9]{8,9}$", message = "올바른 전화번호 형식이 아닙니다")
     private String phone;
+
+    public SignupCommand toCommand() {
+        return new SignupCommand(email, password, name, nickname, phone, Boolean.TRUE.equals(smsAgree));
+    }
 }
