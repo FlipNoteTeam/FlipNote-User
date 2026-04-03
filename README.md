@@ -156,7 +156,7 @@ docker run -p 8081:8081 \
     ```text
     src/main/java/flipnote/user/
     ├── domain/          # 도메인 레이어 (엔티티, 레포지토리, 에러코드, 이벤트)
-    ├── application/     # 애플리케이션 레이어 (서비스)
+    ├── application/     # 애플리케이션 레이어 (서비스, 커맨드, 결과 객체)
     ├── infrastructure/  # 인프라 레이어 (JWT, Redis, 메일, OAuth, 설정)
     └── interfaces/      # 인터페이스 레이어 (HTTP, gRPC 진입점)
     ```
@@ -192,6 +192,20 @@ FlipNote-User/
 │   │   │   │   └── VerificationConstants.java
 │   │   │   │
 │   │   │   ├── application/                           # 애플리케이션 레이어
+│   │   │   │   ├── command/                           # 서비스 입력 커맨드 (검증 어노테이션 없음)
+│   │   │   │   │   ├── SignupCommand.java
+│   │   │   │   │   ├── LoginCommand.java
+│   │   │   │   │   ├── ChangePasswordCommand.java
+│   │   │   │   │   └── UpdateProfileCommand.java
+│   │   │   │   ├── result/                            # 서비스 출력 결과 객체 (프로토콜 무관)
+│   │   │   │   │   ├── UserResult.java
+│   │   │   │   │   ├── UserRegisterResult.java
+│   │   │   │   │   ├── MyInfoResult.java
+│   │   │   │   │   ├── UserInfoResult.java
+│   │   │   │   │   ├── UserUpdateResult.java
+│   │   │   │   │   ├── TokenValidateResult.java
+│   │   │   │   │   ├── SocialLinkResult.java
+│   │   │   │   │   └── SocialLinksResult.java
 │   │   │   │   ├── AuthService.java
 │   │   │   │   ├── OAuthService.java
 │   │   │   │   └── UserService.java
@@ -199,7 +213,7 @@ FlipNote-User/
 │   │   │   ├── infrastructure/                        # 인프라 레이어
 │   │   │   │   ├── config/                            # 범용 설정 (App, JPA, Swagger, gRPC 클라이언트)
 │   │   │   │   ├── jwt/                               # JWT 발급/검증 + 설정
-│   │   │   │   ├── mail/                              # 메일 발송 서비스 + 설정
+│   │   │   │   ├── mail/                              # 메일 발송 서비스 + 설정 + 코드 생성
 │   │   │   │   ├── oauth/                             # Google OAuth2 클라이언트 + 설정
 │   │   │   │   ├── redis/                             # Redis 저장소 (토큰, 인증코드 등)
 │   │   │   │   └── listener/                          # 도메인 이벤트 리스너
@@ -209,9 +223,7 @@ FlipNote-User/
 │   │   │       │   ├── AuthController.java            # 인증 (회원가입, 로그인, 비밀번호 등)
 │   │   │       │   ├── OAuthController.java           # 소셜 로그인 (Google OAuth2)
 │   │   │       │   ├── UserController.java            # 유저 정보 조회/수정
-│   │   │       │   ├── dto/
-│   │   │       │   │   ├── request/                   # Request DTO
-│   │   │       │   │   └── response/                  # Response DTO
+│   │   │       │   ├── dto/request/                   # HTTP Request DTO (@Valid 포함)
 │   │   │       │   └── common/                        # ApiResponse, 예외 처리, 쿠키 유틸
 │   │   │       └── grpc/                              # gRPC 진입점
 │   │   │           ├── GrpcUserQueryService.java      # 유저 조회 gRPC 서비스
