@@ -14,12 +14,11 @@ import flipnote.image.grpc.v1.ImageCommandServiceGrpc;
 import flipnote.image.grpc.v1.Type;
 import flipnote.user.application.command.UpdateProfileCommand;
 import flipnote.user.application.result.MyInfoResult;
+import flipnote.user.application.result.TokenValidateResult;
 import flipnote.user.application.result.UserInfoResult;
 import flipnote.user.application.result.UserResult;
 import flipnote.user.application.result.UserUpdateResult;
-import flipnote.user.domain.AuthErrorCode;
 import flipnote.user.domain.ImageErrorCode;
-import flipnote.user.domain.TokenClaims;
 import flipnote.user.domain.UserErrorCode;
 import flipnote.user.domain.common.BizException;
 import flipnote.user.domain.entity.User;
@@ -38,6 +37,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final SessionInvalidationRepository sessionInvalidationRepository;
     private final JwtProvider jwtProvider;
+    private final AuthService authService;
     private final ImageCommandServiceGrpc.ImageCommandServiceBlockingStub imageCommandServiceStub;
 
     public MyInfoResult getMyInfo(Long userId) {
@@ -108,11 +108,8 @@ public class UserService {
     }
 
     public UserResult findUserByToken(String token) {
-        if (!jwtProvider.isTokenValid(token)) {
-            throw new BizException(AuthErrorCode.INVALID_TOKEN);
-        }
-        TokenClaims claims = jwtProvider.extractClaims(token);
-        return UserResult.from(findActiveUser(claims.userId()));
+        TokenValidateResult tokenResult = authService.validateToken(token);
+        return UserResult.from(findActiveUser(tokenResult.userId()));
     }
 
     private User findActiveUser(Long userId) {
