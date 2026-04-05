@@ -151,8 +151,6 @@ public class AuthService {
 			}
 		});
 
-		findActiveUser(claims.userId());
-
 		return new TokenValidateResult(claims.userId(), claims.email(), claims.role());
 	}
 
