@@ -1,3 +1,7 @@
+logging:
+  level:
+    flipnote.user: debug
+
 spring:
   datasource:
     url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1
@@ -40,6 +44,7 @@ app:
       social-login-success: /social-login/success
       social-login-failure: /social-login/failure
   oauth2:
+    base-url: http://localhost:8081
     providers:
       google:
         client-id: test-client-id

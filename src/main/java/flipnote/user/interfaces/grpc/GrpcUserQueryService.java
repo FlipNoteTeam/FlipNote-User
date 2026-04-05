@@ -75,7 +75,8 @@ public class GrpcUserQueryService extends UserQueryServiceGrpc.UserQueryServiceI
 	public void getUserByToken(GetUserByTokenRequest request, StreamObserver<GetUserByTokenResponse> responseObserver) {
 		log.debug("getUserByToken accessToken [{}]", request.getAccessToken());
 
-		UserResult user = userService.findUserByToken(request.getAccessToken());
+		String accessToken = request.getAccessToken().trim();
+		UserResult user = userService.findUserByToken(accessToken);
 
 		responseObserver.onNext(
 			GetUserByTokenResponse.newBuilder()
